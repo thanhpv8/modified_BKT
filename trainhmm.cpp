@@ -176,11 +176,22 @@ int main (int argc, char ** argv) {
         if(param.duplicate_console==1) fprintf(fid_console, "trainhmm starting...\n");
     }
 
+    const char *convergenceFile = "convergence.txt";
+    Report.convergenceFile = openReportFile(convergenceFile);
+    if(Report.convergenceFile == NULL) {
+		fprintf(stderr,"Can't write output convergence file %s\n",convergenceFile);
+		exit(1);
+	}
+
+
+
     clock_t tm_read = clock();//overall time //SEQ
 //    double _tm_read = omp_get_wtime(); //PAR
     int read_ok = read_and_structure_data(input_file, fid_console);
     tm_read = (clock_t)(clock()-tm_read);//SEQ
     
+
+
 //    _tm_read = omp_get_wtime()-_tm_read;//PAR
     
 //    // experimental
@@ -301,6 +312,7 @@ int main (int argc, char ** argv) {
         // write model
         hmm->toFile(output_file);
         
+        hmm->writeMasteryFile();
         if(param.metrics>0 || param.predictions>0) {
             NUMBER* metrics = Calloc(NUMBER, (size_t)7); // LL, AIC, BIC, RMSE, RMSEnonull, Acc, Acc_nonull;
             // takes care of predictions and metrics, writes predictions if param.predictions==1
@@ -326,7 +338,7 @@ int main (int argc, char ** argv) {
 //            }
             tm_predict = clock()-tm_predict;//SEQ
 //            _tm_predict = omp_get_wtime()-_tm_predict;//PAR
-            
+            // printf("Nparams=%d\n",hmm->getNparams());
             if( param.metrics>0 /*&& !param.quiet*/) {
                 printf("trained model LL=%15.7f (%15.7f), AIC=%8.6f, BIC=%8.6f, RMSE=%8.6f (%8.6f), Acc=%8.6f (%8.6f)\n",
                        metrics[0], metrics[1], // ll's
@@ -603,6 +615,7 @@ void parse_arguments_step1(int argc, char **argv, char *input_file_name, char *o
                 ch = strtok(NULL, "\t\n\r");
                 if(ch!=NULL) {
                     param.metrics_target_obs = (NPAR)(atoi(ch)-1);
+                    
                 }
 				if(param.metrics<0 || param.metrics>1) {
 					fprintf(stderr,"value for -m should be either 0 or 1.\n");
@@ -995,6 +1008,7 @@ void parse_arguments_step2(int argc, char **argv, FILE *fid_console) {
 }
 
 bool read_and_structure_data(const char *filename, FILE *fid_console) {
+    printf("file input %s\n", filename);
     bool readok = true;
     if(param.binaryinput==0) {
         readok = InputUtil::readTxt(filename, &param);
@@ -1022,6 +1036,7 @@ bool read_and_structure_data(const char *filename, FILE *fid_console) {
     
 	// Pass A
 	for(t=0; t<param.N; t++) {
+
         if(param.multiskill==0)
             k = param.dat_skill[t];//[t];
         else

@@ -149,6 +149,14 @@ struct data {
 	NCAT k,g; // pointers to skill (k) and group (g)
 };
 
+FILE *openReportFile(const char* filename);
+struct Report {
+    FILE *convergenceFile; 
+    int iter;
+};
+
+extern struct Report Report;
+
 // parameters of the problem, including configuration parameters, vocabularies of string values, and data
 struct param {
     //

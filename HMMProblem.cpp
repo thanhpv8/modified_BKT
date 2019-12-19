@@ -735,6 +735,7 @@ void HMMProblem::toFileSkill(const char *filename) {
 	fclose(fid);
 }
 
+
 void HMMProblem::toFileGroup(const char *filename) {
 	FILE *fid = fopen(filename,"w");
 	if(fid == NULL) {
@@ -769,13 +770,107 @@ void HMMProblem::toFileGroup(const char *filename) {
 	fclose(fid);
 }
 
+void HMMProblem::writeMasteryFile() {
+    // NUMBER*** matrixA = this->getA();
+    // int i,j;
+    // printf("matrix A n0: %d\n", param.nO);
+    // printf("matrix A nK: %d\n", param.nK);
+    // printf("matrix A nS: %d\n", param.nS);
+
+    // for(i=0; i<2; i++)
+    //     for(j=0; j<2 ;j++) {
+    //         printf("matrix A: %f\n", matrixA[0][i][j]);
+    //     }
+    // for(i=0; i<20;i++) {
+    //     printf("obser %d=%s\n",i,param.map_skill_bwd->find(0)->first);
+    // }
+    const char *masteryFile = "mastery.txt";
+    FILE *mastery = openReportFile(masteryFile);
+    if(mastery == NULL) {
+        fprintf(stderr,"Can't write output mastery file %s\n",masteryFile);
+        exit(1);
+    }
+    int k;
+    int skill_num = this->p->nK;
+    float pL0[skill_num],pT[skill_num],pS[skill_num],pG[skill_num];
+    //Initialize parameter pL, pT, pS, pG for each skill
+    for(k=0; k<skill_num; k++) {
+        pL0[k] = this->pi[k][0];
+        printf("pl0[%d] =%f\n",k,pL0[k]);
+        pT[k]= this->A[k][1][0];
+        printf("pT[%d] =%f\n",k,pT[k]);
+        pS[k] = this->B[k][0][1];
+        printf("pS[%d] =%f\n",k,pS[k]);
+        pG[k] = this->B[k][1][0];
+        printf("pG[%d] =%f\n",k,pG[k]);
+    }
+
+    // pL0 = pL0/1000.0;
+    // this->pi[0][0] = pL0;
+    // this->pi[0][1] = 1-pL0;
+
+    // pT=pT/1000.0;
+    // printf("After pT =%f\n",pT);
+    // this->A[0][1][0] = pT;
+    // printf("After matrix A =%f\n", this->A[0][1][0]);
+    // this->A[0][1][1] = 1.0 - pT;
+    // printf("After matrix A =%f\n",this->A[0][1][1]);
+
+    
+    printf("N =%d\n",this->p->N);
+    
+    float p,pc,pw; // 
+    float masterPoint[skill_num];
+    string outputString[skill_num];
+    int rowIndex_skill[skill_num]= {0};
+
+    //Initialize mastery point for each skill
+    for(k=0; k<skill_num; k++){
+        masterPoint[k] = pL0[k];
+    }
+    
+    int i;
+    for(i=0;i<this->p->N;i++) {
+        int skill_index = this->p->dat_skill[i];
+        rowIndex_skill[skill_index]++;
+        if(rowIndex_skill[skill_index] == 1) 
+            p= masterPoint[skill_index];
+        if(rowIndex_skill[skill_index] > 1) 
+            p = masterPoint[skill_index] + (1-masterPoint[skill_index])*pT[skill_index];
+        //if the answer is right
+        if(this->p->dat_obs[i] == 0) {
+            masterPoint[skill_index] = p*(1-pS[skill_index]) /((p*(1-pS[skill_index])) + ((1-p)*pG[skill_index]));
+        } //if the answer is wrong
+        else if(this->p->dat_obs[i] == 1) {
+            masterPoint[skill_index] = p*pS[skill_index]/((p*pS[skill_index])+((1-p)*(1-pG[skill_index])));
+        }
+
+        // printf("p =%f\n",p);
+        // if(p >= (float)0.95) p=0.95;
+        // printf("After p =%f\n",p);
+        outputString[skill_index] += to_string(rowIndex_skill[skill_index])+"\t"+to_string(masterPoint[skill_index])+"\n";
+        // fprintf(mastery,"%d\t%f\n",i,p);
+
+    }
+
+    // write to mastery file
+    for(k=0; k<skill_num; k++){
+        fprintf(mastery,"skill:%s\n",this->p->map_skill_bwd->find(k)->second.c_str());
+        fprintf(mastery,"%s\t%s\n","questionId","mastery");
+        fprintf(mastery,outputString[k].c_str());
+    }
+    fclose(mastery);
+    
+}
 //void HMMProblem::producePCorrect(NUMBER*** group_skill_map, NUMBER* local_pred, NCAT* ks, NCAT nks, struct data* dt) {
 void HMMProblem::producePCorrect(NUMBER*** group_skill_map, NUMBER* local_pred, NDAT t) {
     NPAR m, i;
     NCAT k;
     NUMBER *local_pred_inner = init1D<NUMBER>(this->p->nO);
     char f_multiskill = this->p->multiskill;
-    
+
+    // printf("multiskill= %d \n", f_multiskill);
+
     struct data* dt = new data;
     NCAT *ks;
     int nks;
@@ -789,17 +884,31 @@ void HMMProblem::producePCorrect(NUMBER*** group_skill_map, NUMBER* local_pred, 
         ks = &this->p->dat_skill_stacked[ rix ];
         nks = this->p->dat_skill_rcount[t];
     }
-    
+    // printf("k= %d \n", k);
+    // printf("ks= %d \n", ks);
+    // printf("nks= %d \n", nks);
+
     dt->g = this->p->dat_group[t];
     dt->t = t; // statefulness
+
+    // printf("n0 is here:%d \n", this->p->nO);
+
     for(m=0; m<this->p->nO; m++) local_pred[m] = 0.0;
     for(int l=0; l<nks; l++) {
         for(m=0; m<this->p->nO; m++) local_pred_inner[m] = 0.0;
         k = ks[l];
+        // printf("In the loop k= %d \n", k);
+        // printf("In the loop nS= %d \n", this->p->nS);
+
         dt->k = k;
         for(m=0; m<this->p->nO; m++)
-            for(i=0; i<this->p->nS; i++)
+            for(i=0; i<this->p->nS; i++){
+                // printf("In the loop d->g= %d \n", dt->g);
+                // printf("In the loop group_skill_map[dt->g][k][i]= %f \n", group_skill_map[dt->g][k][i]);
+                // printf("In the loop getB(dt,i,m)= %f \n", getB(dt,i,m)) ;
                 local_pred_inner[m] += group_skill_map[dt->g][k][i] * getB(dt,i,m);
+
+            }
         for(m=0; m<this->p->nO; m++)
             local_pred[m] += local_pred_inner[m];
     }
@@ -866,7 +975,7 @@ void HMMProblem::producePCorrect(NUMBER*** group_skill_map, NUMBER* local_pred, 
 void HMMProblem::predict(NUMBER* metrics, const char *filename, NPAR* dat_obs, NCAT *dat_group, NCAT *dat_skill, NCAT *dat_skill_stacked, NCAT *dat_skill_rcount, NDAT *dat_skill_rix, HMMProblem **hmms, NPAR nhmms, NPAR *hmm_idx) {
 	NDAT t;
 	NCAT g, k;
-//	NCAT it;
+	//NCAT it;
 	NPAR i, j, m, o, isTarget = 0;
 	
 	NPAR nS = hmms[0]->p->nS, nO = hmms[0]->p->nO;
@@ -894,13 +1003,15 @@ void HMMProblem::predict(NUMBER* metrics, const char *filename, NPAR* dat_obs, N
 	NUMBER *local_pred = init1D<NUMBER>(nO); // local prediction
 	NUMBER *pLe = init1D<NUMBER>(nS);// p(L|evidence);
 	NUMBER pLe_denom; // p(L|evidence) denominator
+
+    // printf("parameter input nG=%d nK=%d nS=%d",nG, nK, nS);
 	NUMBER ***group_skill_map = init3D<NUMBER>(nG, nK, nS);//UNBOOST
-//   ::boost::numeric::ublas::mapped_matrix<NUMBER*> gsm (nG, nK);//BOOST
+    // ::boost::numeric::ublas::mapped_matrix<NUMBER*> gsm (nG, nK);//BOOST
 	
 	NUMBER ll = 0.0, ll_no_null = 0.0, rmse = 0.0, rmse_no_null = 0.0, accuracy = 0.0, accuracy_no_null = 0.0;
 	NUMBER p;
 	
-//	NUMBER *dat_predict = Calloc(NUMBER, N * nO);
+	// NUMBER *dat_predict = Calloc(NUMBER, N * nO);
 	
 	
 	FILE *fid = NULL; // file for storing prediction should that be necessary
@@ -916,19 +1027,25 @@ void HMMProblem::predict(NUMBER* metrics, const char *filename, NPAR* dat_obs, N
 	// initialize
 	struct data* dt = new data;
 	NDAT count = 0;
-//	NDAT d = 0;
+	// NDAT d = 0;
 	HMMProblem *hmm;
 	
 	for(t=0; t<N; t++) {
-//		output_this = true;
+		// output_this = true;
 		o = dat_obs[t];
+        // printf("dat_obs[%d]=%d\n",t, o);
+        
 		g = dat_group[t];
+        // printf("dat_group[%d]=%d\n",t, g);
 		dt->g = g;
         dt->t = t; // statefulness
 		
 		hmm = (nhmms==1)?hmms[0]:hmms[hmm_idx[t]]; // if just one hmm, use 0's, otherwise take the index value
-		
+		// printf("***Begin of Loop \n");
 		isTarget = hmm->p->metrics_target_obs == o;
+        // printf("output= %d \n",o);
+        // printf("hmm->p->metrics_target_obs= %d \n",hmm->p->metrics_target_obs);
+        // printf("isTarget= %d \n",isTarget);
 		NCAT *ar;
 		int n;
 		if(f_multiskill==0) {
@@ -941,39 +1058,39 @@ void HMMProblem::predict(NUMBER* metrics, const char *filename, NPAR* dat_obs, N
 			n = dat_skill_rcount[t];
 		}
 		
-//		// prescriptive pretest
-//		it = this->p->dat_item[t];
-//		string item_s = this->p->map_step_bwd->find((NCAT)it)->second;
-//		std::size_t found_prev = 0, found = item_s.find("PINIT-MANUAL-SET");
-//		if (found!=std::string::npos) { // set manually
-//			// find last divider
-//			found = item_s.find("__");
-//			while(found!=std::string::npos) {
-//				found_prev = found;
-//				found = item_s.find("__", found+1);
-//			}
-//			// get number
-//			NUMBER newPLearn = (NUMBER)atof( item_s.substr(found_prev+2, item_s.length()-2).c_str() );
-//			group_skill_map[g][ ar[0] ][0] = newPLearn;
-//			for(i=1; i<nS; i++) {
-//				group_skill_map[g][ ar[0] ][i] = (1-newPLearn)/(nS-1);
-//			}
-//			continue;
-//		}
+		// // prescriptive pretest
+		// it = this->p->dat_item[t];
+		// string item_s = this->p->map_step_bwd->find((NCAT)it)->second;
+		// std::size_t found_prev = 0, found = item_s.find("PINIT-MANUAL-SET");
+		// if (found!=std::string::npos) { // set manually
+		// 	// find last divider
+		// 	found = item_s.find("__");
+		// 	while(found!=std::string::npos) {
+		// 		found_prev = found;
+		// 		found = item_s.find("__", found+1);
+		// 	}
+		// 	// get number
+		// 	NUMBER newPLearn = (NUMBER)atof( item_s.substr(found_prev+2, item_s.length()-2).c_str() );
+		// 	group_skill_map[g][ ar[0] ][0] = newPLearn;
+		// 	for(i=1; i<nS; i++) {
+		// 		group_skill_map[g][ ar[0] ][i] = (1-newPLearn)/(nS-1);
+		// 	}
+		// 	continue;
+		// }
 		
 		// deal with null skill
 		if(ar[0]<0) { // if no skill label
 			isTarget = hmm->null_skill_obs==o;
 			rmse += pow(isTarget - hmm->null_obs_ratio[f_metrics_target_obs],2);
 			accuracy += isTarget == (hmm->null_obs_ratio[f_metrics_target_obs]==maxn(hmm->null_obs_ratio,nO) && hmm->null_obs_ratio[f_metrics_target_obs] > 1/nO);
-//			rmse += pow(isTarget - hmm->null_skill_obs_prob,2);
-//			accuracy += isTarget == (hmm->null_skill_obs_prob>=0.5);
+			// rmse += pow(isTarget - hmm->null_skill_obs_prob,2);
+			// accuracy += isTarget == (hmm->null_skill_obs_prob>=0.5);
 			ll -= isTarget*safelog(hmm->null_skill_obs_prob) + (1-isTarget)*safelog(1 - hmm->null_skill_obs_prob);
             if(f_predictions>0 /*&& output_this*/) { // write predictions file if it was opened
                 for(m=0; m<nO; m++) {
                     fprintf(fid,"%12.10f%s",hmm->null_obs_ratio[m],(m<(nO-1))?"\t":"\n");
-    //				d = (NDAT)m*N + t;
-    //				dat_predict[ d ] = hmm->null_obs_ratio[m];
+    				// d = (NDAT)m*N + t;
+    				// dat_predict[ d ] = hmm->null_obs_ratio[m];
                 }
             }
 			continue;
@@ -981,26 +1098,26 @@ void HMMProblem::predict(NUMBER* metrics, const char *filename, NPAR* dat_obs, N
 		// check if {g,k}'s were initialized
 		for(int l=0; l<n; l++) {
 			k = ar[l];
-//          NUMBER *z = gsm(g,k); //BOOST
-//          if( z==NULL )//BOOST
+            // NUMBER *z = gsm(g,k); //BOOST
+        //  if( z==NULL )//BOOST
 			if( group_skill_map[g][k][0]==0)//UNBOOST
 			{
 				dt->k = k;
-//                NUMBER * pLbit = Calloc(NUMBER, nS);//BOOST
+            //    NUMBER * pLbit = Calloc(NUMBER, nS);//BOOST
 				
 				for(i=0; i<nS; i++) {
 					group_skill_map[g][k][i] = hmm->getPI(dt,i);//UNBOOST
-//                    pLbit[i] = hmm->getPI(dt,i);//BOOST
+                //    pLbit[i] = hmm->getPI(dt,i);//BOOST
 					count++;
 				}
-//              gsm(g,k) = pLbit; //BOOST
+            //  gsm(g,k) = pLbit; //BOOST
 			}// pLo/pL not set
 		}// for all skills at this transaction
 		
 		// produce prediction and copy to result
-//        hmm->producePCorrect(group_skill_map, local_pred, ar, n, dt); //UNBOOST
+        // hmm->producePCorrect(group_skill_map, local_pred, ar, n, dt); //UNBOOST
         hmm->producePCorrect(group_skill_map, local_pred, t); //UNBOOST
-//		hmm->producePCorrectBoost(&gsm, local_pred, t); //BOOST
+		// hmm->producePCorrectBoost(&gsm, local_pred, t); //BOOST
 		projectsimplex(local_pred, nO); // addition to make sure there's not side effects
 		
         // write prediction out (before pKnown update)
@@ -1035,7 +1152,7 @@ void HMMProblem::predict(NUMBER* metrics, const char *filename, NPAR* dat_obs, N
 		for(int l=0; l<n; l++) {
 			k = ar[l];
 			dt->k = k;
-//          NUMBER* pLbit = gsm(g,k); //BOOST
+            // NUMBER* pLbit = gsm(g,k); //BOOST
 			
 			if(o>-1) { // known observations //
 				// update p(L)
@@ -1043,70 +1160,73 @@ void HMMProblem::predict(NUMBER* metrics, const char *filename, NPAR* dat_obs, N
 				// 1. pLe =  (L .* B(:,o)) ./ ( L'*B(:,o)+1e-8 );
 				for(i=0; i<nS; i++)
 					pLe_denom += group_skill_map[g][k][i] * hmm->getB(dt,i,o);  // TODO: this is local_pred[o]!!!//UNBOOST
-//                  pLe_denom += pLbit[i] * hmm->getB(dt,i,o); //BOOST
+                //  pLe_denom += pLbit[i] * hmm->getB(dt,i,o); //BOOST
 				for(i=0; i<nS; i++)
 					pLe[i] = group_skill_map[g][k][i] * hmm->getB(dt,i,o) / safe0num(pLe_denom); //UNBOOST
-//                  pLe[i] = pLbit[i] * hmm->getB(dt,i,o) / safe0num(pLe_denom); //BOOST
+                //  pLe[i] = pLbit[i] * hmm->getB(dt,i,o) / safe0num(pLe_denom); //BOOST
 				// 2. L = (pLe'*A)';
 				for(i=0; i<nS; i++)
 					group_skill_map[g][k][i]= 0.0; //UNBOOST
-//                  pLbit[i]= 0.0; //BOOST
+                //  pLbit[i]= 0.0; //BOOST
 				for(j=0; j<nS; j++)
 					for(j=0; j<nS; j++)
 						for(i=0; i<nS; i++)
 							group_skill_map[g][k][j] += pLe[i] * hmm->getA(dt,i,j);//A[i][j]; //UNBOOST
-//                          pLbit[j] += pLe[i] * hmm->getA(dt,i,j);//A[i][j]; //BOOST
+                        //  pLbit[j] += pLe[i] * hmm->getA(dt,i,j);//A[i][j]; //BOOST
 			} else { // unknown observation
 				// 2. L = (pL'*A)';
 				for(i=0; i<nS; i++)
 					pLe[i] = group_skill_map[g][k][i]; // copy first; //UNBOOST
-//                  pLe[i] = pLbit[i]; // copy first; //BOOST
+                //  pLe[i] = pLbit[i]; // copy first; //BOOST
 				for(i=0; i<nS; i++)
 					group_skill_map[g][k][i] = 0.0; // erase old value //UNBOOST
-//                  pLbit[i] = 0.0; // erase old value //BOOST
+                //  pLbit[i] = 0.0; // erase old value //BOOST
 				for(j=0; j<nS; j++)
 					for(i=0; i<nS; i++)
 						group_skill_map[g][k][j] += pLe[i] * hmm->getA(dt,i,j);//UNBOOST
-//               pLbit[j] += pLe[i] * hmm->getA(dt,i,j);//BOOST
+            //   pLbit[j] += pLe[i] * hmm->getA(dt,i,j);//BOOST
 			}// observations
 			projectsimplex(group_skill_map[g][k], nS); // addition to make sure there's not side effects //UNBOOST
-//            projectsimplex(pLbit, nS); // addition to make sure there's not side effects //BOOST
+        //    projectsimplex(pLbit, nS); // addition to make sure there's not side effects //BOOST
 		}
-		
+        // printf("=>metrics_target_obs= %d \n", f_metrics_target_obs);
+		// printf("local_pred[f_metrics_target_obs]= %f \n", local_pred[f_metrics_target_obs]);
 		rmse += pow(isTarget-local_pred[f_metrics_target_obs],2);
 		rmse_no_null += pow(isTarget-local_pred[f_metrics_target_obs],2);
+        // printf("accuracy at t= %f \n", accuracy);
 		accuracy += isTarget == (local_pred[f_metrics_target_obs]==maxn(local_pred,nO) && local_pred[f_metrics_target_obs]>1/nO);
-		accuracy_no_null += isTarget == (local_pred[f_metrics_target_obs]==maxn(local_pred,nO) && local_pred[f_metrics_target_obs]>1/nO);
+		// printf("accuracy after t= %f \n", accuracy);
+        accuracy_no_null += isTarget == (local_pred[f_metrics_target_obs]==maxn(local_pred,nO) && local_pred[f_metrics_target_obs]>1/nO);
 		p = safe01num(local_pred[f_metrics_target_obs]);
 		ll -= safelog(  p)*   isTarget  +  safelog(1-p)*(1-isTarget);
 		ll_no_null -= safelog(  p)*   isTarget  +  safelog(1-p)*(1-isTarget);
 		
 		// temporary experimental
-//		for(int l=0; hmm->p->per_kc_rmse_acc && hmm->p->kc_counts!=NULL && l<n; l++) {
-//			k = ar[l];
-//			hmm->p->kc_counts[k]++;
-//			hmm->p->kc_rmse[k] += pow(isTarget-local_pred[hmm->p->metrics_target_obs],2);
-//			hmm->p->kc_acc[k]  += isTarget == (local_pred[hmm->p->metrics_target_obs]>=0.5);
-//		}
+		// for(int l=0; hmm->p->per_kc_rmse_acc && hmm->p->kc_counts!=NULL && l<n; l++) {
+		// 	k = ar[l];
+		// 	hmm->p->kc_counts[k]++;
+		// 	hmm->p->kc_rmse[k] += pow(isTarget-local_pred[hmm->p->metrics_target_obs],2);
+		// 	hmm->p->kc_acc[k]  += isTarget == (local_pred[hmm->p->metrics_target_obs]>=0.5);
+		// }
 	} // for all data
 	
 	// temporary experimental
-//	for(int k=0; hmm->p->per_kc_rmse_acc && hmm->p->kc_counts!=NULL && k<nK; k++) {
-//		hmm->p->kc_rmse[k] = sqrt(hmm->p->kc_rmse[k] / hmm->p->kc_counts[k]);
-//		hmm->p->kc_acc[k]  =      hmm->p->kc_acc[k]  / hmm->p->kc_counts[k];
-//	}
+	// for(int k=0; hmm->p->per_kc_rmse_acc && hmm->p->kc_counts!=NULL && k<nK; k++) {
+	// 	hmm->p->kc_rmse[k] = sqrt(hmm->p->kc_rmse[k] / hmm->p->kc_counts[k]);
+	// 	hmm->p->kc_acc[k]  =      hmm->p->kc_acc[k]  / hmm->p->kc_counts[k];
+	// }
 	
 	delete(dt);
 	free(local_pred);
 	free(pLe);
 	free3D<NUMBER>(group_skill_map, nG, nK);//UNBOOST
 	
-//    gsm.clear();//BOOST
-//    typedef boost::numeric::ublas::mapped_matrix<NUMBER *>::iterator1 it1_t;//BOOST
-//    typedef boost::numeric::ublas::mapped_matrix<NUMBER *>::iterator2 it2_t;//BOOST
-//    for (it1_t itgsm1 = gsm.begin1(); itgsm1 != gsm.end1(); itgsm1++)//BOOST
-//       for (it2_t itgsm2 = itgsm1.begin(); itgsm2 != itgsm1.end(); itgsm2++)//BOOST
-//           free( gsm( itgsm2.index1(), itgsm2.index2() ) );//BOOST
+    // gsm.clear();//BOOST
+    // typedef boost::numeric::ublas::mapped_matrix<NUMBER *>::iterator1 it1_t;//BOOST
+    // typedef boost::numeric::ublas::mapped_matrix<NUMBER *>::iterator2 it2_t;//BOOST
+    // for (it1_t itgsm1 = gsm.begin1(); itgsm1 != gsm.end1(); itgsm1++)//BOOST
+    //     for (it2_t itgsm2 = itgsm1.begin(); itgsm2 != itgsm1.end(); itgsm2++)//BOOST
+    //         free( gsm( itgsm2.index1(), itgsm2.index2() ) );//BOOST
 	
 	rmse = sqrt(rmse / N);
 	rmse_no_null = sqrt(rmse_no_null / (N - N_null));
@@ -1115,50 +1235,53 @@ void HMMProblem::predict(NUMBER* metrics, const char *filename, NPAR* dat_obs, N
 		metrics[1] = ll_no_null;
 		metrics[2] = rmse;
 		metrics[3] = rmse_no_null;
+        // printf("Accuracy= %f \n", accuracy);
+        // printf("N = %d \n", N);
 		metrics[4] = accuracy/N;
+        // printf("metric Accuracy= %f \n", accuracy/N);
 		metrics[5] = accuracy_no_null/(N-N_null);
 	}
 	
 	
-//	if(f_predictions>0) { // close predictions file if it was opened
-//		ofstream fout(filename,ios::out);
-//		char str[1024];
-//		if(!fout)
-//		{
-//			fprintf(stderr,"WARNINT! Failed to open output prediction file %s for writing\n",filename);
-//			//exit(1); // do not exit with error
-//		}
-//		
-//		for(NDAT t=0; t<N; t++) {
-//			for(m=0; m<nO; m++) {
-//				d = (NDAT)m*N + t;
-//				sprintf(str,"%12.10f%s",dat_predict[d],(m<(nO-1))?"\t": ((f_predictions==1)?"\n":"\t") );
-//				fout << str;
-//			}
-////			if(f_predictions==2) { // if we print out states of KC's as welll
-////				if(f_multiskill==0) {
-////					k = dat_skill[t];
-////					ar = &k;
-////					v = dat_known[t];
-////					var = &v;
-////					n = 1;
-////				} else {
-////					k = dat_skill_stacked[ dat_skill_rix[t] ];
-////					ar = &dat_skill_stacked[ dat_skill_rix[t] ];
-////					v = dat_known_stacked[ dat_skill_rix[t] ];
-////					var = &dat_known_stacked[ dat_skill_rix[t] ];
-////					n = dat_skill_rcount[t];
-////				}
-////				for(int l=0; l<n && ar[0]>-1; l++) { // all KC here
-////					sprintf(str,"%12.10f%s",var[l], (l==(n-1) && l==(n-1))?"\n":"\t");
-////					fout << str;
-////				}
-////			}
-//		}
-//		fout.close();
-//	}
-//	free(dat_predict);
-//	
+	// if(f_predictions>0) { // close predictions file if it was opened
+	// 	ofstream fout(filename,ios::out);
+	// 	char str[1024];
+	// 	if(!fout)
+	// 	{
+	// 		fprintf(stderr,"WARNINT! Failed to open output prediction file %s for writing\n",filename);
+	// 		//exit(1); // do not exit with error
+	// 	}
+		
+	// 	for(NDAT t=0; t<N; t++) {
+	// 		for(m=0; m<nO; m++) {
+	// 			d = (NDAT)m*N + t;
+	// 			sprintf(str,"%12.10f%s",dat_predict[d],(m<(nO-1))?"\t": ((f_predictions==1)?"\n":"\t") );
+	// 			fout << str;
+	// 		}
+	// 		if(f_predictions==2) { // if we print out states of KC's as welll
+	// 			if(f_multiskill==0) {
+	// 				k = dat_skill[t];
+	// 				ar = &k;
+	// 				v = dat_known[t];
+	// 				var = &v;
+	// 				n = 1;
+	// 			} else {
+	// 				k = dat_skill_stacked[ dat_skill_rix[t] ];
+	// 				ar = &dat_skill_stacked[ dat_skill_rix[t] ];
+	// 				v = dat_known_stacked[ dat_skill_rix[t] ];
+	// 				var = &dat_known_stacked[ dat_skill_rix[t] ];
+	// 				n = dat_skill_rcount[t];
+	// 			}
+	// 			for(int l=0; l<n && ar[0]>-1; l++) { // all KC here
+	// 				sprintf(str,"%12.10f%s",var[l], (l==(n-1) && l==(n-1))?"\n":"\t");
+	// 				fout << str;
+	// 			}
+	// 		}
+	// 	}
+	// 	fout.close();
+	// }
+	// free(dat_predict);
+	
 	
 	if(f_predictions>0) // close predictions file if it was opened
 		fclose(fid);
@@ -1659,6 +1782,7 @@ FitResult HMMProblem::GradientDescentBit(FitBit *fb) {
     // inital copy parameter values to the t-1 slice
     fb->copy(FBS_PAR, FBS_PARm1);
     while( !fr->conv && fr->iter<=this->p->maxiter ) {
+        Report.iter = fr->iter;
         fr->ndat = computeGradients(fb);//a_gradPI, a_gradA, a_gradB);
         
         if(fr->iter==1) {
@@ -1666,7 +1790,7 @@ FitResult HMMProblem::GradientDescentBit(FitBit *fb) {
             fr->pOmid = fr->pO0;
         }
         // copy parameter values
-//        fb->copy(FBS_PAR, FBS_PARm1);
+        // fb->copy(FBS_PAR, FBS_PARm1);
         // make ste-
         if( this->p->solver==METHOD_GD || (fr->iter==1 && this->p->solver==METHOD_CGD)  || (fr->iter==1 && this->p->solver==METHOD_GBB) )
             fr->pO = doLinearStep(fb); // step for linked skill 0
@@ -1733,6 +1857,7 @@ FitResult HMMProblem::GradientDescentBitBig(FitBit **fbs, NCAT nfbs) {
     NUMBER crit;
 
     while( fr->conv==0 && fr->iter<=this->p->maxiter ) {
+        Report.iter = fr->iter;
         fr->ndat = computeGradientsBig(fbs, nfbs);//a_gradPI, a_gradA, a_gradB);
         
         if(fr->iter==1) {
@@ -1795,6 +1920,11 @@ NUMBER HMMProblem::GradientDescent() {
 	// fit all as 1 skill first
 	//
 	if(this->p->single_skill>0) {
+        //Begin output convergence point for the new skill
+        fprintf(Report.convergenceFile,"skill:%s\n",this->p->map_skill_bwd->find(0)->second);
+        fprintf(Report.convergenceFile,"%s\t%s\n","iter","liklog delta");
+        Report.iter = 0;
+
         FitResult fr;
         fr.pO = 0;
         FitBit *fb = new FitBit(this->p->nS, this->p->nO, this->p->nK, this->p->nG, this->p->tol, this->p->tol_mode);
@@ -1841,16 +1971,22 @@ NUMBER HMMProblem::GradientDescent() {
 //    {//PAR
 //    printf("thread %i|%i\n",omp_get_thread_num(),omp_get_num_threads());//undoPAR
     if(this->p->single_skill!=2){
-//        #pragma omp for schedule(dynamic) reduction(+:loglik) //PAR
+        //#pragma omp for schedule(dynamic) reduction(+:loglik) //PAR
         for(x=0; x<nX; x++) { // if not "force single skill" too
+
+            //Begin output convergence point for the new skill
+            fprintf(Report.convergenceFile,"skill:%s\n",this->p->map_skill_bwd->find(x)->second.c_str());
+            fprintf(Report.convergenceFile,"%s\t%s\n","iter","liklog delta");
+            Report.iter = 0;
+
             NCAT xndat;
             struct data** x_data;
             if(this->p->structure==STRUCTURE_SKILL) {
                 xndat = this->p->k_numg[x];
                 x_data = this->p->k_g_data[x];
-//            } else if(this->p->structure==STRUCTURE_GROUP) {
-//                xndat = this->p->g_numk[x];
-//                x_data = this->p->g_k_data[x];
+            // } else if(this->p->structure==STRUCTURE_GROUP) {
+            // xndat = this->p->g_numk[x];
+            // x_data = this->p->g_k_data[x];
             } else {
                 xndat = 0;
                 x_data = NULL;
@@ -1884,7 +2020,7 @@ NUMBER HMMProblem::GradientDescent() {
             }
         } // for all skills
     }// if not force single skill
-//    }//#omp //PAR
+//     }//#omp //PAR
         
     }
     
@@ -2001,6 +2137,8 @@ NUMBER HMMProblem::BaumWelch() {
     return loglik;
 }
 
+
+
 FitResult HMMProblem::BaumWelchBit(FitBit *fb) {
     FitResult fr;
     fr.iter = 1;
@@ -2013,6 +2151,7 @@ FitResult HMMProblem::BaumWelchBit(FitBit *fb) {
     
     fr.ndat = -1; // no accounting so far
     while( !fr.conv && fr.iter<=this->p->maxiter ) {
+        Report.iter = fr.iter;
         if(fr.iter==1) {
             fr.ndat = computeAlphaAndPOParam(xndat, x_data);
             fr.pO0 = HMMProblem::getSumLogPOPara(xndat, x_data);
@@ -3060,6 +3199,9 @@ void HMMProblem::readModelBody(FILE *fid, struct param* param, NDAT *line_no,  b
         fscanf(fid,"%[^\n]\n",col);// read last one
         this->pi[idxk][i] = atof(col);
         (*line_no)++;
+
+        for(i=0; i<2; i++)
+            printf("Pi variable=%f\n", this->pi[idxk][i]);
 		// read A
         fscanf(fid,"A\t");
 		for(i=0; i<this->p->nS; i++)
@@ -3074,6 +3216,10 @@ void HMMProblem::readModelBody(FILE *fid, struct param* param, NDAT *line_no,  b
                 }
 			}
         (*line_no)++;
+
+        for(i=0; i<2; i++)
+            for(j=0;j<2;j++)
+                printf("A variable=%f\n", this->A[idxk][i][j]);
 		// read B
         fscanf(fid,"B\t");
 		for(i=0; i<this->p->nS; i++)
@@ -3087,7 +3233,11 @@ void HMMProblem::readModelBody(FILE *fid, struct param* param, NDAT *line_no,  b
                     this->B[idxk][i][m] = atof(col);
                 }
 			}
+        
         (*line_no)++;
+        for(i=0; i<2; i++)
+            for(j=0;j<2;j++)
+                printf("B variable=%f\n", this->B[idxk][i][j]);
 	} // for all k
 }
 
@@ -3107,6 +3257,7 @@ bool HMMProblem::checkConvergenceBig0(FitBit** fbs, NCAT nfbs, NUMBER tol, NUMBE
         }
     }
     *criterion = sqrt(*criterion);
+    fprintf(Report.convergenceFile,"%d\t%f\n",Report.iter, *criterion);
 	return (*criterion) < tol; // double the truth or false
 }
 
@@ -3128,6 +3279,7 @@ bool HMMProblem::checkConvergenceBig(FitBit** fbs, NCAT nfbs, NUMBER tol, NUMBER
         *criterion += sqrt(critetion_bit);
     }
     *criterion/=nfbs;
+    fprintf(Report.convergenceFile,"%d\t%f\n",Report.iter, *criterion);
 	return (*criterion) < tol; // double the truth or false
 }
 

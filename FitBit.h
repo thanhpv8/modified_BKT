@@ -111,6 +111,9 @@ public:
 
     // adding penalties
     void addL2Penalty(enum FIT_BIT_VAR fbv, param* param, NUMBER factor);
+    //write convergence point
+    void writeConvergence(FILE *fid, int iter, float liklog, float deltaLiklog);
+
 private:
     NUMBER tol;
     NPAR tol_mode;

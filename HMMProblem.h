@@ -63,6 +63,7 @@ public:
     virtual void setGradA (FitBit *fb);
     virtual void setGradB (FitBit *fb);
 	virtual void toFile(const char *filename);
+    void writeMasteryFile();
 	NUMBER getSumLogPOPara(NCAT xndat, struct data **x_data); // generic per k/g-slice
 	bool hasNon01Constraints();
     NUMBER getLogLik(); // get log likelihood of the fitted model
@@ -143,6 +144,8 @@ protected:
     NUMBER BaumWelch(); // return -LL for the model
     void readNullObsRatio(FILE *fid, struct param* param, NDAT *line_no);
 	bool checkPIABConstraints(NUMBER* a_PI, NUMBER** a_A, NUMBER** a_B); // all constraints, inc row sums
+
+    
 private:
     // write model
 	void toFileSkill(const char *filename);

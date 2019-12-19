@@ -675,7 +675,7 @@ void set_param_defaults(struct param *param) {
     param->do_not_check_constraints = 0;
 	param->sliced                = 0;
     param->duplicate_console     = 0;
-	param->maxiter               = 200;
+	param->maxiter               = 2000;
 	param->quiet                 = 0;
 	param->single_skill          = 0;
 	param->structure			 = 1; // default is by skill
@@ -693,11 +693,11 @@ void set_param_defaults(struct param *param) {
     param->initfile[0]           = 0; // 1st bit is 0 - no file
     param->init_params           = Calloc(NUMBER, (size_t)5);
     param->init_params_n         = 5;
-	param->init_params[0] = 0.5; // PI[0]
+	param->init_params[0] = 0.0; // PI[0]
 	param->init_params[1] = 1.0; // p(not forget)
 	param->init_params[2] = 0.4; // p(learn)
-	param->init_params[3] = 0.8; // p(not slip)
-	param->init_params[4] = 0.2; // p(guess)
+	param->init_params[3] = 0.1; // p(not slip)
+	param->init_params[4] = 0.9; // p(guess)
 	param->param_lo				= Calloc(NUMBER, (size_t)10);
 	param->param_lo[0] = 0; param->param_lo[1] = 0; param->param_lo[2] = 1; param->param_lo[3] = 0; param->param_lo[4] = 0;
 	param->param_lo[5] = 0; param->param_lo[6] = 0; param->param_lo[7] = 0; param->param_lo[8] = 0; param->param_lo[9] = 0;
@@ -1031,3 +1031,12 @@ NUMBER NRand(NUMBER NMin, NUMBER NMax) {
     NUMBER N = (NUMBER)rand() / RAND_MAX;
     return NMin + N * (NMax - NMin);
 }
+
+
+FILE *openReportFile(const char* filename) {
+    FILE *fid = fopen(filename,"w");
+    return fid;
+}
+
+
+struct Report Report;

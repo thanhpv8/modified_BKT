@@ -26,7 +26,7 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
  */
-
+#include "utils.h"
 #include "FitBit.h"
 
 FitBit::FitBit(NPAR a_nS, NPAR a_nO, NCAT a_nK, NCAT a_nG, NUMBER a_tol, NPAR a_tol_mode) {
@@ -112,9 +112,9 @@ FitBit::FitBit(NPAR a_nS, NPAR a_nO, NCAT a_nK, NCAT a_nG, NUMBER a_tol, NPAR a_
 }
 
 FitBit::~FitBit() {
-//    if(this->pi != NULL) free(this->PI); // these are usually linked
-//    if(this->A != NULL) free2D<NUMBER>(this->A, this->nS); // these are usually linked
-//    if(this->B != NULL) free2D<NUMBER>(this->B, this->nS); // these are usually linked
+    // if(this->pi != NULL) free(this->PI); // these are usually linked
+    // if(this->A != NULL) free2D<NUMBER>(this->A, this->nS); // these are usually linked
+    // if(this->B != NULL) free2D<NUMBER>(this->B, this->nS); // these are usually linked
     if(this->PIm1 != NULL) free(this->PIm1);
     if(this->Am1 != NULL) free2D<NUMBER>(this->Am1, (NDAT)this->nS);
     if(this->Bm1 != NULL) free2D<NUMBER>(this->Bm1, (NDAT)this->nS);
@@ -427,10 +427,17 @@ void FitBit::add(enum FIT_BIT_SLOT sourse_fbs, enum FIT_BIT_SLOT target_fbs) {
     add(soursePI, sourseA, sourseB, targetPI, targetA, targetB);
 }
 
+void FitBit::writeConvergence(FILE *fid, int iter, float liklog, float deltaLiklog) {
+    fprintf(fid,"%d\t%f\t%f\n",iter,liklog,deltaLiklog);
+}
+
+
+
 bool FitBit::checkConvergence(FitResult *fr) {
     
     NUMBER criterion = 0;
     NUMBER criterion_oscil = 0; // oscillation between PAR and PARm1, i.e. PAR is close to PARm2
+    NUMBER delta = 0;
     bool res = false;
     switch (this->tol_mode) {
         case 'p':
@@ -456,18 +463,25 @@ bool FitBit::checkConvergence(FitResult *fr) {
                         criterion_oscil += pow(this->B[i][k] - this->Bm2[i][k],2);
                     }
                 }
-                res = sqrt(criterion_oscil) < this->tol; // double the truth or false
+                delta =  sqrt(criterion_oscil);
+                res = delta < this->tol; // double the truth or false
             }
-            else
-                res = sqrt(criterion) < this->tol; // double the truth or false
+            else {
+                delta =  sqrt(criterion);
+                res = delta < this->tol; // double the truth or false
+            }
+
+            fprintf(Report.convergenceFile,"%d\t%f\n",Report.iter, delta);
             break;
         case 'l':
             criterion = (fr->pOmid-fr->pO)/fr->ndat;
             res = criterion < this->tol;
+            fprintf(Report.convergenceFile,"%d\t%f\n",Report.iter, criterion);
             break;
     }
     return res;
 }
+
 // without checking for oscillation, actually, afer copying t-1 to t-2 and t to t-1, it is used to check for oscillation
 bool FitBit::checkConvergenceSingle(FitResult *fr) {
     
@@ -485,10 +499,12 @@ bool FitBit::checkConvergenceSingle(FitResult *fr) {
                     criterion += pow(this->B[i][k] - this->Bm1[i][k],2);
                 }
             }
-            
+            //this part is not done yet by the author (??????)
         case 'l':
             criterion = (fr->pOmid-fr->pO)/fr->ndat;
             res = criterion < this->tol;
+            // we not print out the Likelihoodlog result this time, 'cus this is the step backward
+            // fprintf(Report.convergenceFile,"%d\t%f\n",Report.iter, criterion);
             break;
     }
     return res;
