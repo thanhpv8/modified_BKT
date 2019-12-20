@@ -858,7 +858,7 @@ void HMMProblem::writeMasteryFile() {
         if(this->p->dat_weight[i] == 5) {
             masterPoint[skill_index] = masterPoint[skill_index] + 0.05;
             if(masterPoint[skill_index] > 1.0) {
-                cout<<"Ooops, there is over threshold at line "<< i << "\n";
+                // cout<<"Ooops, there is over threshold at line "<< i << "\n";
                 masterPoint[skill_index] = 1.0;
             }
         }
