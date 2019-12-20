@@ -855,13 +855,13 @@ void HMMProblem::writeMasteryFile() {
         // printf("After p =%f\n",p);
         
         // add reward point if student answer question right
-        // if(this->p->dat_weight[i] == 5) {
-        //     masterPoint[skill_index] = masterPoint[skill_index] + 0.05;
-        //     if(masterPoint[skill_index] > 1.0) {
-        //         cout<<"Ooops, there is over threshold at line "<< i << "\n";
-        //         masterPoint[skill_index] = 1.0;
-        //     }
-        // }
+        if(this->p->dat_weight[i] == 5) {
+            masterPoint[skill_index] = masterPoint[skill_index] + 0.05;
+            if(masterPoint[skill_index] > 1.0) {
+                cout<<"Ooops, there is over threshold at line "<< i << "\n";
+                masterPoint[skill_index] = 1.0;
+            }
+        }
 
         // append output string to output array
         outputString[skill_index] += to_string(rowIndex_skill[skill_index])+"\t"+to_string(masterPoint[skill_index])+"\n";
@@ -879,6 +879,15 @@ void HMMProblem::writeMasteryFile() {
     fclose(mastery);
     
 }
+
+float HMMProblem::forgettingCurve(int tprevious, int tcurrent) {
+    float mastery_point;
+    int duration = tcurrent - tprevious;
+    float duration_in_day = (float)duration/(24.0*60.0*60.0);
+    
+    return mastery_point;
+}
+
 //void HMMProblem::producePCorrect(NUMBER*** group_skill_map, NUMBER* local_pred, NCAT* ks, NCAT nks, struct data* dt) {
 void HMMProblem::producePCorrect(NUMBER*** group_skill_map, NUMBER* local_pred, NDAT t) {
     NPAR m, i;
@@ -988,7 +997,7 @@ void HMMProblem::producePCorrect(NUMBER*** group_skill_map, NUMBER* local_pred, 
 //}//BOOST
 
 
-//void HMMProblem::predict(NUMBER* metrics, const char *filename, NPAR* dat_obs, NCAT *dat_group, NCAT *dat_skill, StripedArray<NCAT*> *dat_multiskill) {
+// void HMMProblem::predict(NUMBER* metrics, const char *filename, NPAR* dat_obs, NCAT *dat_group, NCAT *dat_skill, StripedArray<NCAT*> *dat_multiskill) {
 void HMMProblem::predict(NUMBER* metrics, const char *filename, NPAR* dat_obs, NCAT *dat_group, NCAT *dat_skill, NCAT *dat_skill_stacked, NCAT *dat_skill_rcount, NDAT *dat_skill_rix, HMMProblem **hmms, NPAR nhmms, NPAR *hmm_idx) {
 	NDAT t;
 	NCAT g, k;
