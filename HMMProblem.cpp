@@ -817,12 +817,12 @@ void HMMProblem::writeMasteryFile() {
     // printf("After matrix A =%f\n",this->A[0][1][1]);
 
     
-    printf("N =%d\n",this->p->N);
+    // printf("N =%d\n",this->p->N);
 
-    for(k=0;k<this->p->N;k++) {
-        // cout<<"weight: "<<this->p->dat_weight[k]<<"\n";
-        printf("weight inside mastery: %d\n", this->p->dat_weight[k]);
-    }
+    // for(k=0;k<this->p->N;k++) {
+    //     // cout<<"weight: "<<this->p->dat_weight[k]<<"\n";
+    //     printf("weight inside mastery: %d\n", this->p->dat_weight[k]);
+    // }
     
     float p,pc,pw; // 
     float masterPoint[skill_num];
@@ -855,7 +855,7 @@ void HMMProblem::writeMasteryFile() {
         // printf("After p =%f\n",p);
         
         // add reward point if student answer question right
-        if(this->p->dat_weight[i] == 5) {
+        if(this->p->dat_weight[i] == 5 && this->p->dat_obs[i] == 0) {
             masterPoint[skill_index] = masterPoint[skill_index] + 0.05;
             if(masterPoint[skill_index] > 1.0) {
                 // cout<<"Ooops, there is over threshold at line "<< i << "\n";
