@@ -163,7 +163,6 @@ int main (int argc, char ** argv) {
     
 	set_param_defaults(&param);
     
-    
     // parse parameters, step 1
 	parse_arguments_step1(argc, argv, input_file, output_file, predict_file, colsole_file);
 
@@ -190,8 +189,7 @@ int main (int argc, char ** argv) {
     int read_ok = read_and_structure_data(input_file, fid_console);
     tm_read = (clock_t)(clock()-tm_read);//SEQ
     
-
-
+    
 //    _tm_read = omp_get_wtime()-_tm_read;//PAR
     
 //    // experimental
@@ -1019,6 +1017,7 @@ bool read_and_structure_data(const char *filename, FILE *fid_console) {
         return false;
     }
     
+
 	//	2. distribute data into nK skill bins
 	//		create
 	//          skill_group_map[nK][nG] - explicit 'sparse' map of skills and groups, here 1 means done

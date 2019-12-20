@@ -170,6 +170,7 @@ bool InputUtil::readTxt(const char *fn, struct param * param) {
 	// grab memory and read all data
 	StripedArray<NPAR> *striped_dat_obs = new StripedArray<NPAR>();
 	StripedArray<NCAT> *striped_dat_group = new StripedArray<NCAT>();
+    StripedArray<NPAR> *striped_dat_weight = new StripedArray<NPAR>();
     StripedArray<NCAT> *striped_dat_skill = NULL;
     StripedArray<NCAT> *striped_dat_skill_stacked = NULL;
     StripedArray<NCAT> *striped_dat_skill_rcount  = NULL;
@@ -266,7 +267,16 @@ bool InputUtil::readTxt(const char *fn, struct param * param) {
 		else
             striped_dat_item->add(it2->second);
 		
-        
+        // Weight
+		col = strtok(NULL,"\t\n\r");
+		if(col == NULL) {
+			wrong_no_columns = true;
+			break;
+		}
+		number_columns++;
+		NPAR weight = (NPAR)(atoi( col ));
+		striped_dat_weight->add(weight); 
+
 		// Skill
 		col = strtok(NULL,"\t\n\r");
 		if(col == NULL) {
@@ -393,10 +403,12 @@ bool InputUtil::readTxt(const char *fn, struct param * param) {
     
     // copy striped to lined
     param->dat_obs = striped_dat_obs->toArray();
-  
     delete striped_dat_obs;
     param->dat_group = striped_dat_group->toArray();
     delete striped_dat_group;
+    param->dat_weight = striped_dat_weight->toArray();
+    delete striped_dat_weight;
+
     if(param->multiskill==0) {
         param->dat_skill = striped_dat_skill->toArray();
         delete striped_dat_skill;

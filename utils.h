@@ -64,7 +64,7 @@ using namespace std;
 
 //http://stackoverflow.com/questions/2053843/min-and-max-value-of-data-type-in-c
 
-#define COLUMNS 4
+#define COLUMNS 5
 
 
 typedef signed char NPAR; // number of observations or states, now 128 max, KEEP THIS SIGNED, we need -1 code for NULL
@@ -196,6 +196,7 @@ struct param {
     NPAR cv_inout_flag; // are we writing the folds out ('o') or reading them in ('i')
     // data
     NPAR* dat_obs;
+    NPAR* dat_weight;
     NCAT* dat_group;
     NCAT *dat_skill;
     NCAT *dat_skill_stacked; // if multiskill==1, stacked array of all multiskills

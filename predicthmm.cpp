@@ -51,7 +51,7 @@
 
 using namespace std;
 
-#define COLUMNS 4
+#define COLUMNS 5
 
 struct param param;
 //static char *line = NULL;
@@ -80,6 +80,7 @@ int main (int argc, char ** argv) {
 
     // read data
     if(param.binaryinput==0) {
+		cout<<"input: "<<input_file<<"\n";
         InputUtil::readTxt(input_file, &param);
     } else {
         InputUtil::readBin(input_file, &param);
@@ -173,7 +174,7 @@ int main (int argc, char ** argv) {
 	clock_t tm = clock();
 //    if(param.metrics>0 || param.predictions>0) {
         metrics = Calloc(NUMBER, (size_t)7);// LL, AIC, BIC, RMSE, RMSEnonull, Acc, Acc_nonull;
-//    }
+//    } 
 	HMMProblem::predict(metrics, predict_file, param.dat_obs, param.dat_group, param.dat_skill, param.dat_skill_stacked, param.dat_skill_rcount, param.dat_skill_rix, &hmm, 1, NULL);
 //    predict(predict_file, hmm);
 	if(param.quiet == 0)
@@ -186,7 +187,7 @@ int main (int argc, char ** argv) {
                metrics[4], metrics[5]); // acc's
     //}
     free(metrics);
-    
+
 	destroy_input_data(&param);
 	
     delete hmm;
