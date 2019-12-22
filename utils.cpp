@@ -763,6 +763,7 @@ void set_param_defaults(struct param *param) {
     // data
     param->dat_obs = NULL;
     param->dat_weight = NULL;
+    param->dat_time = NULL;
     param->dat_group = NULL;
     param->dat_skill = NULL;
     param->dat_skill_stacked = NULL;
@@ -783,6 +784,7 @@ void destroy_input_data(struct param *param) {
     // data - checks if pointers to data are null anyway (whether we delete linear columns of data or not)
 	if(param->dat_obs != NULL) free( param->dat_obs );
     if(param->dat_weight != NULL) free( param->dat_weight );
+    if(param->dat_time != NULL) free( param->dat_time );
 	if(param->dat_group != NULL) free( param->dat_group );
 	if(param->dat_item != NULL) free( param->dat_item );
 	if(param->dat_skill != NULL) free( param->dat_skill );

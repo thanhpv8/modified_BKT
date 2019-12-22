@@ -64,7 +64,7 @@ public:
     virtual void setGradB (FitBit *fb);
 	virtual void toFile(const char *filename);
     void writeMasteryFile();
-    float forgettingCurve(int previous, int current);
+    float forgettingCurve(float prevousMastery, int previous, int current);
 	NUMBER getSumLogPOPara(NCAT xndat, struct data **x_data); // generic per k/g-slice
 	bool hasNon01Constraints();
     NUMBER getLogLik(); // get log likelihood of the fitted model

@@ -816,18 +816,23 @@ void HMMProblem::writeMasteryFile() {
     // this->A[0][1][1] = 1.0 - pT;
     // printf("After matrix A =%f\n",this->A[0][1][1]);
 
-    
     // printf("N =%d\n",this->p->N);
 
     // for(k=0;k<this->p->N;k++) {
     //     // cout<<"weight: "<<this->p->dat_weight[k]<<"\n";
     //     printf("weight inside mastery: %d\n", this->p->dat_weight[k]);
     // }
+
+    for(k=0;k<this->p->N;k++) {
+        // cout<<"weight: "<<this->p->dat_weight[k]<<"\n";
+        printf("time inside mastery: %d\n", this->p->dat_time[k]);
+    }
     
-    float p,pc,pw; // 
+    float p,pc,pw, p_overtime; 
     float masterPoint[skill_num];
     string outputString[skill_num];
     int rowIndex_skill[skill_num]= {0};
+    int previousTime[skill_num];
 
     //Initialize mastery point for each skill
     for(k=0; k<skill_num; k++){
@@ -838,10 +843,15 @@ void HMMProblem::writeMasteryFile() {
     for(i=0;i<this->p->N;i++) {
         int skill_index = this->p->dat_skill[i];
         rowIndex_skill[skill_index]++;
-        if(rowIndex_skill[skill_index] == 1) 
+        if(rowIndex_skill[skill_index] == 1) {
+            previousTime[skill_index] = this->p->dat_time[i];
             p= masterPoint[skill_index];
-        if(rowIndex_skill[skill_index] > 1) 
-            p = masterPoint[skill_index] + (1-masterPoint[skill_index])*pT[skill_index];
+        }
+        if(rowIndex_skill[skill_index] > 1) {
+            p_overtime = forgettingCurve(masterPoint[skill_index],previousTime[skill_index], this->p->dat_time[i]);
+            p = p_overtime + (1 - p_overtime) * pT[skill_index];
+            previousTime[skill_index] = this->p->dat_time[i];
+        }
         //if the answer is right
         if(this->p->dat_obs[i] == 0) {
             masterPoint[skill_index] = p*(1-pS[skill_index]) /((p*(1-pS[skill_index])) + ((1-p)*pG[skill_index]));
@@ -867,7 +877,6 @@ void HMMProblem::writeMasteryFile() {
         outputString[skill_index] += to_string(rowIndex_skill[skill_index])+"\t"+to_string(masterPoint[skill_index])+"\n";
         
         // fprintf(mastery,"%d\t%f\n",i,p);
-
     }
 
     // write to mastery file
@@ -880,12 +889,13 @@ void HMMProblem::writeMasteryFile() {
     
 }
 
-float HMMProblem::forgettingCurve(int tprevious, int tcurrent) {
+float HMMProblem::forgettingCurve(float previousMastery, int tprevious, int tcurrent) {
     float mastery_point;
     int duration = tcurrent - tprevious;
     float duration_in_day = (float)duration/(24.0*60.0*60.0);
-    
-    return mastery_point;
+    float forgetting_ratio = exp(-0.1*duration_in_day/30.0);
+    float updated_mastery = previousMastery * forgetting_ratio;
+    return updated_mastery;
 }
 
 //void HMMProblem::producePCorrect(NUMBER*** group_skill_map, NUMBER* local_pred, NCAT* ks, NCAT nks, struct data* dt) {

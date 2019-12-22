@@ -51,7 +51,7 @@
 
 using namespace std;
 
-#define COLUMNS 5
+#define COLUMNS 6
 
 struct param param;
 //static char *line = NULL;

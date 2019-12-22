@@ -171,6 +171,7 @@ bool InputUtil::readTxt(const char *fn, struct param * param) {
 	StripedArray<NPAR> *striped_dat_obs = new StripedArray<NPAR>();
 	StripedArray<NCAT> *striped_dat_group = new StripedArray<NCAT>();
     StripedArray<NPAR> *striped_dat_weight = new StripedArray<NPAR>();
+    StripedArray<NUMBER> *striped_dat_time = new StripedArray<NUMBER>();
     StripedArray<NCAT> *striped_dat_skill = NULL;
     StripedArray<NCAT> *striped_dat_skill_stacked = NULL;
     StripedArray<NCAT> *striped_dat_skill_rcount  = NULL;
@@ -204,7 +205,7 @@ bool InputUtil::readTxt(const char *fn, struct param * param) {
     NDAT Nstacked_alt = 0;
     param->N_null = 0;
 	while( readline(fid)!=NULL && !wrong_no_columns) {
-        //    while( NULL!=fgets(line,max_line_length,fid) && !wrong_no_columns) {
+        // while( NULL!=fgets(line,max_line_length,fid) && !wrong_no_columns) {
 		number_columns = 0;
 		// Observation
 		col = strtok(line,"\t\n\r");
@@ -276,6 +277,18 @@ bool InputUtil::readTxt(const char *fn, struct param * param) {
 		number_columns++;
 		NPAR weight = (NPAR)(atoi( col ));
 		striped_dat_weight->add(weight); 
+
+        // timestamp
+		col = strtok(NULL,"\t\n\r");
+        printf("time inside input c: %s\n", col);
+		if(col == NULL) {
+			wrong_no_columns = true;
+			break;
+		}
+		number_columns++;
+		NUMBER time = (NUMBER)(atof( col ));
+		striped_dat_time->add(time);
+        printf("time inside input: %s\n", to_string(time));
 
 		// Skill
 		col = strtok(NULL,"\t\n\r");
@@ -408,6 +421,8 @@ bool InputUtil::readTxt(const char *fn, struct param * param) {
     delete striped_dat_group;
     param->dat_weight = striped_dat_weight->toArray();
     delete striped_dat_weight;
+    param->dat_time = striped_dat_time->toArray();
+    delete striped_dat_time;
 
     if(param->multiskill==0) {
         param->dat_skill = striped_dat_skill->toArray();
