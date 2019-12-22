@@ -280,7 +280,6 @@ bool InputUtil::readTxt(const char *fn, struct param * param) {
 
         // timestamp
 		col = strtok(NULL,"\t\n\r");
-        printf("time inside input c: %s\n", col);
 		if(col == NULL) {
 			wrong_no_columns = true;
 			break;
@@ -288,7 +287,6 @@ bool InputUtil::readTxt(const char *fn, struct param * param) {
 		number_columns++;
 		NUMBER time = (NUMBER)(atof( col ));
 		striped_dat_time->add(time);
-        printf("time inside input: %s\n", to_string(time));
 
 		// Skill
 		col = strtok(NULL,"\t\n\r");

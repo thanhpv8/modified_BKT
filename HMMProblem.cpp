@@ -795,6 +795,7 @@ void HMMProblem::writeMasteryFile() {
     float pL0[skill_num],pT[skill_num],pS[skill_num],pG[skill_num];
     //Initialize parameter pL, pT, pS, pG for each skill
     for(k=0; k<skill_num; k++) {
+        cout << "skill num "<< k << endl;
         pL0[k] = this->pi[k][0];
         printf("pl0[%d] =%f\n",k,pL0[k]);
         pT[k]= this->A[k][1][0];
@@ -823,10 +824,11 @@ void HMMProblem::writeMasteryFile() {
     //     printf("weight inside mastery: %d\n", this->p->dat_weight[k]);
     // }
 
-    for(k=0;k<this->p->N;k++) {
-        // cout<<"weight: "<<this->p->dat_weight[k]<<"\n";
-        printf("time inside mastery: %d\n", this->p->dat_time[k]);
-    }
+    // for(k=0;k<this->p->N;k++) {
+    //      if(this->p->dat_time[k] == 1111120) {
+    //         cout << "it's equal in timestamp in mastery" <<endl;
+    //     }
+    // }
     
     float p,pc,pw, p_overtime; 
     float masterPoint[skill_num];
@@ -857,6 +859,9 @@ void HMMProblem::writeMasteryFile() {
             masterPoint[skill_index] = p*(1-pS[skill_index]) /((p*(1-pS[skill_index])) + ((1-p)*pG[skill_index]));
         } //if the answer is wrong
         else if(this->p->dat_obs[i] == 1) {
+            if(i == 20) {
+                printf("p is %f\n", p);
+            }
             masterPoint[skill_index] = p*pS[skill_index]/((p*pS[skill_index])+((1-p)*(1-pG[skill_index])));
         }
 
