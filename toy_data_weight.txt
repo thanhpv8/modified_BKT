@@ -18,6 +18,11 @@
 1	student1	step18	1	skillA
 1	student1	step19	1	skillA
 2	student1	step20	1	skillA
+2	student1	step20	1	skillA
+2	student1	step20	1	skillA
+2	student1	step20	1	skillA
+2	student1	step20	1	skillA
+2	student1	step20	1	skillA
 2	student1	step1	1	skillB
 2	student1	step2	1	skillB
 2	student1	step3	1	skillB
