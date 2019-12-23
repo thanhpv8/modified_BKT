@@ -18,6 +18,13 @@
 1	student1	step18	1	3564534	skillA
 1	student1	step19	1	5657677	skillA
 2	student1	step20	1	5657677	skillA
+2	student1	step20	1	5657677	skillA
+2	student1	step20	1	5657677	skillA
+2	student1	step20	1	5657677	skillA
+2	student1	step20	1	5657677	skillA
+2	student1	step20	1	5657677	skillA
+2	student1	step20	1	5657677	skillA
+2	student1	step20	1	5657677	skillA
 2	student1	step1	1	1111120	skillB
 2	student1	step2	1	1111120	skillB
 2	student1	step3	1	1111120	skillB
