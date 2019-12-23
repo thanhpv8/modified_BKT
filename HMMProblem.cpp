@@ -2069,6 +2069,10 @@ NUMBER HMMProblem::BaumWelch() {
 	// fit all as 1 skill first
 	//
     if(this->p->single_skill>0) {
+         //Begin output convergence point for the new skill
+        fprintf(Report.convergenceFile,"skill:%s\n",this->p->map_skill_bwd->find(0)->second);
+        fprintf(Report.convergenceFile,"%s\t%s\n","iter","liklog delta");
+
         FitResult fr;
         fr.pO = 0;
         NCAT x;
@@ -2114,6 +2118,10 @@ NUMBER HMMProblem::BaumWelch() {
 //    {//PAR
 //        #pragma omp for schedule(dynamic) reduction(+:loglik) //PAR
         for(k=0; k<this->p->nK; k++) {
+            //Begin output convergence point for the new skill
+            fprintf(Report.convergenceFile,"skill:%s\n",this->p->map_skill_bwd->find(k)->second);
+            fprintf(Report.convergenceFile,"%s\t%s\n","iter","liklog delta");
+
             FitBit *fb = new FitBit(this->p->nS, this->p->nO, this->p->nK, this->p->nG, this->p->tol, this->p->tol_mode);
             fb->link(this->getPI(k), this->getA(k), this->getB(k), this->p->k_numg[k], this->p->k_g_data[k]);
             if(this->p->block_fitting[0]!=0) fb->pi = NULL;
