@@ -845,9 +845,9 @@ void HMMProblem::writeMasteryFile() {
             masterPoint[skill_index] = p*pS[skill_index]/((p*pS[skill_index])+((1-p)*(1-pG[skill_index])));
         }
 
-        // // printf("p =%f\n",p);
-        // if(masterPoint[skill_index] >= (float)0.95) masterPoint[skill_index]=0.99;
-        // printf("After pMaster =%f\n",masterPoint[skill_index]);
+        // Apply mastery point to under a threshold 0.99
+        if(masterPoint[skill_index] >= (float)0.99) masterPoint[skill_index]=0.99;
+
         outputString[skill_index] += to_string(rowIndex_skill[skill_index])+"\t"+to_string(masterPoint[skill_index])+"\n";
         // fprintf(mastery,"%d\t%f\n",i,p);
 
